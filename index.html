@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ogrody</title>
+    <style>
+        :root {
+            --bg-color: #ede6db;
+            --panel-color: #f6f1ea;
+            --accent: #8b5e34;
+            --text-color: #3b2f2f;
+            --button-bg: #e2d6c3;
+            --button-hover: #d4c4ad;
+            --border-color: #c8b8a0;
+        }
+
+        body {
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background-color: var(--bg-color);
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            color: var(--text-color);
+            animation: fadeIn 1s ease;
+        }
+
+        main {
+            text-align: center;
+            max-width: 800px;
+            padding: 2rem;
+            border-radius: 20px;
+            background: white;
+            box-shadow: 0 4px 25px rgba(0,0,0,0.1);
+            animation: fadeIn 1.2s ease;
+        }
+
+        h1 {
+            margin-bottom: 1rem;
+            font-size: 1.3rem;
+            letter-spacing: 0.5px;
+        }
+
+        canvas {
+            width: 500px;
+            height: 500px;
+            max-width: 100%;
+            border: 2px solid var(--accent);
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            transition: border-color 0.3s ease;
+        }
+
+        .nav {
+            margin-top: 4rem;
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .nav a {
+            text-decoration: none;
+            padding: 0.6rem 1.3rem;
+            border-radius: 8px;
+            background: var(--button-bg);
+            color: var(--accent);
+            font-weight: 600;
+            transition: background 0.3s, transform 0.2s;
+        }
+
+        .nav a:hover {
+            background: var(--button-hover);
+            transform: translateY(-2px);
+        }
+
+        footer {
+            align-items: center;
+            margin-top: 8.5rem;
+            font-size: 0.85rem;
+            color: #666;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Projekt ogrodu</h1>
+    <canvas id="canvas" width="500" height="500"></canvas>
+
+    <div class="nav">
+        <a id="generateButton">Generuj</a>
+        <a href="https://kwintaj.github.io/Ogrody/">Powrót</a>
+    </div>
+
+    <footer>
+        © 2025 Jan Kwinta — Ogrody: Gramatyka grafowa
+    </footer>
+
+<script>
+    const canvas = document.getElementById("canvas");
+    const ctx = canvas.getContext("2d");
+
+</script>
+
+</body>
+</html>
