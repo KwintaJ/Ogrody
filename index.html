@@ -15,6 +15,10 @@
             --border-color: #c8b8a0;
         }
 
+        * {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        }
+
         body {
             margin: 0;
             height: 100vh;
@@ -23,7 +27,6 @@
             justify-content: center;
             align-items: center;
             background-color: var(--bg-color);
-            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
             color: var(--text-color);
             animation: fadeIn 1s ease;
         }
@@ -78,6 +81,31 @@
             transform: translateY(-2px);
         }
 
+        .dimensions {
+            margin-top: 1.5rem;
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .dimensions label {
+            display: flex;
+            flex-direction: column;
+            font-size: 0.85rem;
+            color: var(--text-color);
+        }
+
+        .dimensions input {
+            margin-top: 0.3rem;
+            padding: 0.4rem 0.6rem;
+            width: 90px;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+            background: white;
+            font-size: 0.9rem;
+        }
+
         footer {
             align-items: center;
             margin-top: 8.5rem;
@@ -101,13 +129,293 @@
         <a href="https://kwintaj.github.io/Ogrody/">Powrót</a>
     </div>
 
+    <div class="dimensions">
+        <label>
+            Szerokość (m):
+            <input type="number" id="widthInput" value="50" min="1">
+        </label>
+        <label>
+            Wysokość (m):
+            <input type="number" id="heightInput" value="50" min="1">
+        </label>
+    </div>
+
     <footer>
         © 2025 Jan Kwinta — Ogrody: Gramatyka grafowa
     </footer>
 
 <script>
+    //=========================================================
+    // canvas glowne
     const canvas = document.getElementById("canvas");
     const ctx = canvas.getContext("2d");
+
+    //=========================================================
+    // zmiana wymiarow
+    const PX_PER_METER = 10;
+    const dpr = window.devicePixelRatio || 1;
+    function resizeCanvas() {
+        widthMeters = Number(document.getElementById("widthInput").value);
+        heightMeters = Number(document.getElementById("heightInput").value);
+
+        if (widthMeters >= 75) {
+            widthMeters = 75;
+        }
+        if (heightMeters >= 60) {
+            heightMeters = 60;
+        }
+        if (widthMeters <= 10) {
+            widthMeters = 10;
+        }
+        if (heightMeters <= 10) {
+            heightMeters = 10;
+        }
+
+        const widthPx = widthMeters * PX_PER_METER;
+        const heightPx = heightMeters * PX_PER_METER;
+
+        canvas.width = widthPx * dpr;
+        canvas.height = heightPx * dpr;
+
+        canvas.style.width = widthPx + "px";
+        canvas.style.height = heightPx + "px";
+
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        ctx.clearRect(0, 0, widthPx, heightPx);        
+    }
+    document.getElementById("widthInput").addEventListener("click", resizeCanvas);
+    document.getElementById("heightInput").addEventListener("click", resizeCanvas);
+    document.getElementById("widthInput").addEventListener("keypress", resizeCanvas);
+    document.getElementById("heightInput").addEventListener("keypress", resizeCanvas);
+    resizeCanvas();
+
+    //=========================================================
+    // reguly - funkcje generowania ogrodu
+    function grassRandomDivide(R) {
+
+    }
+
+    function useRule(R) {
+        switch (R.t) {
+            case Type.GRASS:
+                return [R];
+                
+                break;
+            case Type.PATH:
+                
+                break;
+            case Type.FLOWERS:
+                
+                break;
+            case Type.TREE:
+                
+                break;
+            case Type.BENCH:
+                
+                break;
+            case Type.WATER:
+                
+                break;
+        }
+    }
+
+    //=========================================================
+    // klasy i funkcje rysowania ogrodu
+    const Type = {
+        GRASS: "GRASS",
+        PATH: "PATH",
+        FLOWERS: "FLOWERS",
+        TREE: "TREE",
+        BENCH: "BENCH",
+        WATER: "WATER"
+    }
+
+    const METER = 10; 
+    function drawTile(x, y, type) {
+        switch (type) {
+            case Type.GRASS:
+                ctx.fillStyle = "#7ec850";
+                ctx.fillRect(x, y, METER, METER);
+
+                ctx.fillStyle = "#5fa63c";
+                for (let i = 0; i < 3; i++) {
+                    ctx.beginPath();
+                    ctx.arc(
+                        x + Math.random() * METER,
+                        y + Math.random() * METER,
+                        1,
+                        0,
+                        Math.PI * 2
+                    );
+                    ctx.fill();
+                }
+                break;
+
+            case Type.PATH:
+                ctx.fillStyle = "#b0b0b0";
+                ctx.fillRect(x, y, METER, METER);
+
+                ctx.fillStyle = "#8a6a3d";
+                for (let i = 0; i < 2; i++) {
+                    ctx.fillRect(
+                        x + Math.random() * METER,
+                        y + Math.random() * METER,
+                        2,
+                        2
+                    );
+                }
+                break;
+
+            case Type.WATER:
+                ctx.fillStyle = "#6ec6ff";
+                ctx.fillRect(x, y, METER, METER);
+
+                ctx.strokeStyle = "#4fa3d1";
+                ctx.beginPath();
+                ctx.moveTo(x, y + 5);
+                ctx.lineTo(x + METER, y + 5);
+                ctx.stroke();
+                break;
+
+            case Type.TREE:
+                ctx.fillStyle = "#2e7d32";
+                ctx.fillRect(x, y, METER, METER);
+                break;
+
+            case Type.FLOWERS:
+                ctx.fillStyle = "#ffc0cb";
+                ctx.fillRect(x, y, METER, METER);
+
+                ctx.fillStyle = ["red", "yellow", "purple", "white"][
+                    Math.floor(Math.random() * 4)
+                ];
+                ctx.beginPath();
+                ctx.arc(x + 5, y + 5, 2, 0, Math.PI * 2);
+                ctx.fill();
+                break;
+
+            case Type.BENCH:
+                ctx.fillStyle = "#8d6e63";
+                ctx.fillRect(x, y, METER, METER);
+                break;
+        }
+    }
+
+    class Rectangle {
+        constructor(x, y, w, h, t) {
+            this.x = x;
+            this.y = y;
+            this.w = w;
+            this.h = h;
+            this.t = t;
+        }
+
+        draw() {
+            for (let px = this.x; px < this.x + this.w; px += METER) {
+                for (let py = this.y; py < this.y + this.h; py += METER) {
+                    drawTile(px, py, this.t);
+                }
+            }
+        }
+    }
+
+    class Circle {
+        constructor(x, y, r, t) {
+            this.x = x;
+            this.y = y;
+            this.r = r;
+            this.t = t;
+        }
+
+        draw() {
+            switch (this.t) {
+                case Type.GRASS:
+                    ctx.fillStyle = "#7ec850";
+                    break;
+                case Type.WATER:
+                    ctx.fillStyle = "#6ec6ff";
+                    break;
+                case Type.TREE:
+                    ctx.fillStyle = "#2e7d32";
+                    break;
+                case Type.FLOWERS:
+                    ctx.fillStyle = "#ffc0cb";
+                    break;
+                case Type.PATH:
+                    ctx.fillStyle = "#b0b0b0";
+                    break;
+                case Type.BENCH:
+                    ctx.fillStyle = "#8d6e63";
+                    break;
+            }
+
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, this.r, 0, Math.PI * 2);
+            ctx.fill();
+
+            if (this.t === Type.TREE) {
+                ctx.strokeStyle = "#1b4d1b";
+                ctx.lineWidth = 4;
+                ctx.stroke();
+            }
+
+            for (let px = this.x - this.r; px < this.x + this.r; px += METER) {
+                for (let py = this.y - this.r; py < this.y + this.r; py += METER) {
+                    const dx = px + METER / 2 - this.x;
+                    const dy = py + METER / 2 - this.y;
+                    if (dx * dx + dy * dy <= (this.r - 10) * (this.r - 10)) {
+                        drawTile(px, py, this.t);
+                    }
+                }
+            }
+        }
+    }
+
+    class Garden {
+        constructor() {
+            this.grass0 = new Rectangle(0, 0, canvas.width, canvas.height, Type.GRASS);
+            this.graph = []
+        }
+
+        randomGenerate() {
+            this.graph.push.apply(this.graph, grassRandomDivide(this.grass0));
+
+            while (true) {
+                if (Math.random() * 100 <= 20) {
+                    break;
+                }
+
+                let randElem = Math.floor(Math.random() * this.graph.length);
+                if (this.graph[randElem] instanceof Rectangle) {
+                    let R = this.graph[randElem];
+                    this.graph.splice(randElem, 1);
+                    this.graph.push.apply(this.graph, useRule(R));
+                }
+            }
+        }
+
+        draw() {
+            for (let i = 0; i < this.graph.length; i++) {
+                if (this.graph[i] instanceof Rectangle) {
+                    this.graph[i].draw();
+                }
+            }
+
+            for (let i = 0; i < this.graph.length; i++) {
+                if (this.graph[i] instanceof Circle) {
+                    this.graph[i].draw();
+                }
+            }
+        }
+    }
+
+    //=========================================================
+    // generowanie ogrodu
+    document.getElementById("generateButton").addEventListener("click", (event) => {
+        let g = new Garden();
+        g.randomGenerate();
+        g.draw();
+    });
 
 </script>
 
