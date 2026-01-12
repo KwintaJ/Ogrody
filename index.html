@@ -151,7 +151,7 @@
     const ctx = canvas.getContext("2d");
 
     //=========================================================
-    // zmiana wymiarow
+    // zmiana wymiarow ogrodu
     const PX_PER_METER = 10;
     const dpr = window.devicePixelRatio || 1;
     function resizeCanvas() {
@@ -188,36 +188,6 @@
     document.getElementById("widthInput").addEventListener("keypress", resizeCanvas);
     document.getElementById("heightInput").addEventListener("keypress", resizeCanvas);
     resizeCanvas();
-
-    //=========================================================
-    // reguly - funkcje generowania ogrodu
-    function grassRandomDivide(R) {
-
-    }
-
-    function useRule(R) {
-        switch (R.t) {
-            case Type.GRASS:
-                return [R];
-                
-                break;
-            case Type.PATH:
-                
-                break;
-            case Type.FLOWERS:
-                
-                break;
-            case Type.TREE:
-                
-                break;
-            case Type.BENCH:
-                
-                break;
-            case Type.WATER:
-                
-                break;
-        }
-    }
 
     //=========================================================
     // klasy i funkcje rysowania ogrodu
@@ -371,6 +341,20 @@
         }
     }
 
+    //=========================================================
+    // reguly - funkcje generowania ogrodu
+
+    // podstawowy pseudolosowy podzial trawnika
+    function grassRandomDivide(R, n) {
+        return [R];
+    }
+
+    function addPaths(G) {
+
+    }
+
+    //=========================================================
+    // klasa ogrod
     class Garden {
         constructor() {
             this.grass0 = new Rectangle(0, 0, canvas.width, canvas.height, Type.GRASS);
@@ -378,31 +362,20 @@
         }
 
         randomGenerate() {
-            this.graph.push.apply(this.graph, grassRandomDivide(this.grass0));
-
-            while (true) {
-                if (Math.random() * 100 <= 20) {
-                    break;
-                }
-
-                let randElem = Math.floor(Math.random() * this.graph.length);
-                if (this.graph[randElem] instanceof Rectangle) {
-                    let R = this.graph[randElem];
-                    this.graph.splice(randElem, 1);
-                    this.graph.push.apply(this.graph, useRule(R));
-                }
-            }
+            this.graph.push.apply(this.graph, grassRandomDivide(this.grass0, 3));
         }
 
         draw() {
             for (let i = 0; i < this.graph.length; i++) {
                 if (this.graph[i] instanceof Rectangle) {
+                    console.log(this.graph[i]);
                     this.graph[i].draw();
                 }
             }
 
             for (let i = 0; i < this.graph.length; i++) {
                 if (this.graph[i] instanceof Circle) {
+                    console.log(this.graph[i]);
                     this.graph[i].draw();
                 }
             }
