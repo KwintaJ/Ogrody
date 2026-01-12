@@ -281,6 +281,7 @@
         }
 
         draw() {
+            console.log(this);
             for (let px = this.x; px < this.x + this.w; px += METER) {
                 for (let py = this.y; py < this.y + this.h; py += METER) {
                     drawTile(px, py, this.t);
@@ -346,11 +347,123 @@
 
     // podstawowy pseudolosowy podzial trawnika
     function grassRandomDivide(R, n) {
-        return [R];
+        if (n == 1) {
+            return [R];
+        }
+
+        let newDiv = [];
+        let grass1, grass2;
+
+        // w podzialach nierownych (2:3 i 3:2) dzielimy dalej 
+        // wieksza czesc; w podzialach rownych losujemy
+        const randomChoice = Math.floor(Math.random() * 8);
+        switch (randomChoice) {
+            // podzialy wertykalnie
+            case 0: // 1:1 dzielimy 1
+                grass1 = new Rectangle(R.x, R.y, R.w * 0.5, R.h, Type.GRASS);
+                grass2 = new Rectangle(R.x + R.w * 0.5, R.y, R.w * 0.5, R.h, Type.GRASS);
+                newDiv.push(grass2);
+                newDiv.push.apply(newDiv, grassRandomDivide(grass1, n - 1));
+                break;
+            case 1: // 1:1 dzielimy 2
+                grass1 = new Rectangle(R.x, R.y, R.w * 0.5, R.h, Type.GRASS);
+                grass2 = new Rectangle(R.x + R.w * 0.5, R.y, R.w * 0.5, R.h, Type.GRASS);
+                newDiv.push(grass1);
+                newDiv.push.apply(newDiv, grassRandomDivide(grass2, n - 1));
+                break;
+            case 2: // 3:2
+                grass1 = new Rectangle(R.x, R.y, R.w * 0.6, R.h, Type.GRASS);
+                grass2 = new Rectangle(R.x + R.w * 0.6, R.y, R.w * 0.4, R.h, Type.GRASS);
+                newDiv.push(grass2);
+                newDiv.push.apply(newDiv, grassRandomDivide(grass1, n - 1));
+                break;
+            case 3: // 2:3
+                grass1 = new Rectangle(R.x, R.y, R.w * 0.4, R.h, Type.GRASS);
+                grass2 = new Rectangle(R.x + R.w * 0.4, R.y, R.w * 0.6, R.h, Type.GRASS);
+                newDiv.push(grass1);
+                newDiv.push.apply(newDiv, grassRandomDivide(grass2, n - 1));
+                break;
+            // podzialy horyzontalnie
+            case 4: // 1:1 dzielimy 1
+                grass1 = new Rectangle(R.x, R.y, R.w, R.h * 0.5, Type.GRASS);
+                grass2 = new Rectangle(R.x, R.y + R.h * 0.5, R.w, R.h * 0.5, Type.GRASS);
+                newDiv.push(grass2);
+                newDiv.push.apply(newDiv, grassRandomDivide(grass1, n - 1));
+                break;
+            case 5: // 1:1 dzielimy 2
+                grass1 = new Rectangle(R.x, R.y, R.w, R.h * 0.5, Type.GRASS);
+                grass2 = new Rectangle(R.x, R.y + R.h * 0.5, R.w, R.h * 0.5, Type.GRASS);
+                newDiv.push(grass1);
+                newDiv.push.apply(newDiv, grassRandomDivide(grass2, n - 1));
+                break;
+            case 6: // 3:2
+                grass1 = new Rectangle(R.x, R.y, R.w, R.h * 0.6, Type.GRASS);
+                grass2 = new Rectangle(R.x, R.y + R.h * 0.6, R.w, R.h * 0.4, Type.GRASS);
+                newDiv.push(grass2);
+                newDiv.push.apply(newDiv, grassRandomDivide(grass1, n - 1));
+                break;
+            case 7: // 2:3
+                grass1 = new Rectangle(R.x, R.y, R.w, R.h * 0.4, Type.GRASS);
+                grass2 = new Rectangle(R.x, R.y + R.h * 0.4, R.w, R.h * 0.6, Type.GRASS);
+                newDiv.push(grass1);
+                newDiv.push.apply(newDiv, grassRandomDivide(grass2, n - 1));
+                break;
+        }
+
+        return newDiv;
     }
 
     function addPaths(G) {
+        if (G.length <= 1) {
+            return G;
+        }
 
+        for (let i = 0; i < G.length; i++) {
+            if (G[i].t == Type.GRASS && Math.random() > 0.5) {
+                let OG = G[i]; // oldGrass
+                let newGrass, newPath;
+
+                let pathCreated = false;
+
+                while (!pathCreated) {
+                    let randomChoice = Math.floor(Math.random() * 4);
+                    switch (randomChoice) {
+                        case 0:
+                            if (OG.x > 0) {
+                                newGrass = new Rectangle(OG.x + 10, OG.y, OG.w - 10, OG.h, OG.t);
+                                newPath = new Rectangle(OG.x, OG.y, 10, OG.h, Type.PATH);
+                                pathCreated = true;
+                            }
+                            break;
+                        case 1:
+                            if (OG.y > 0) {
+                                newGrass = new Rectangle(OG.x, OG.y + 10, OG.w, OG.h - 10, OG.t);
+                                newPath = new Rectangle(OG.x, OG.y, OG.w, 10, Type.PATH);
+                                pathCreated = true;
+                            }
+                            break;
+                        case 2:
+                            if (OG.x + OG.w < canvas.width) {
+                                newGrass = new Rectangle(OG.x, OG.y, OG.w - 10, OG.h, OG.t);
+                                newPath = new Rectangle(OG.x + OG.w - 10, OG.y, 10, OG.h, Type.PATH);
+                                pathCreated = true;
+                            }
+                            break;
+                        case 3:
+                            if (OG.y + OG.h < canvas.height) {
+                                newGrass = new Rectangle(OG.x, OG.y, OG.w, OG.h - 10, OG.t);
+                                newPath = new Rectangle(OG.x, OG.y + OG.h - 10, OG.w, 10, Type.PATH);
+                                pathCreated = true;
+                            }
+                            break;
+                    }
+                }
+                G.splice(i, 1, newGrass, newPath);
+                i++;
+            }
+        }
+
+        return G;
     }
 
     //=========================================================
@@ -362,13 +475,13 @@
         }
 
         randomGenerate() {
-            this.graph.push.apply(this.graph, grassRandomDivide(this.grass0, 3));
+            this.graph.push.apply(this.graph, grassRandomDivide(this.grass0, 5));
+            this.graph = addPaths(this.graph);
         }
 
         draw() {
             for (let i = 0; i < this.graph.length; i++) {
                 if (this.graph[i] instanceof Rectangle) {
-                    console.log(this.graph[i]);
                     this.graph[i].draw();
                 }
             }
@@ -385,6 +498,7 @@
     //=========================================================
     // generowanie ogrodu
     document.getElementById("generateButton").addEventListener("click", (event) => {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
         let g = new Garden();
         g.randomGenerate();
         g.draw();
