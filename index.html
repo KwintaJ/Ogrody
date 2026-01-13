@@ -197,7 +197,8 @@
         FLOWERS: "FLOWERS",
         TREE: "TREE",
         BENCH: "BENCH",
-        WATER: "WATER"
+        WATER: "WATER",
+        NULL: "NULL"
     }
 
     const METER = 10; 
@@ -273,15 +274,15 @@
 
     class Rectangle {
         constructor(x, y, w, h, t) {
-            this.x = x;
-            this.y = y;
-            this.w = w;
-            this.h = h;
+            this.x = Math.round(x / 10) * 10;
+            this.y = Math.round(y / 10) * 10;
+            this.w = Math.round(w / 10) * 10;
+            this.h = Math.round(h / 10) * 10;
             this.t = t;
         }
 
         draw() {
-            console.log(this);
+            // console.log(this);
             for (let px = this.x; px < this.x + this.w; px += METER) {
                 for (let py = this.y; py < this.y + this.h; py += METER) {
                     drawTile(px, py, this.t);
@@ -343,152 +344,183 @@
     }
 
     //=========================================================
-    // reguly - funkcje generowania ogrodu
-
-    // podstawowy pseudolosowy podzial trawnika
-    function grassRandomDivide(R, n) {
-        if (n == 1) {
-            return [R];
+    // klasa ogrod do generowania grafu gramatyka
+    class Garden {
+        constructor() {
+            this.graph = [];
+            this.DIVISION_COEFF = 4;
         }
 
-        let newDiv = [];
-        let grass1, grass2;
-
-        // w podzialach nierownych (2:3 i 3:2) dzielimy dalej 
-        // wieksza czesc; w podzialach rownych losujemy
-        const randomChoice = Math.floor(Math.random() * 8);
-        switch (randomChoice) {
-            // podzialy wertykalnie
-            case 0: // 1:1 dzielimy 1
-                grass1 = new Rectangle(R.x, R.y, R.w * 0.5, R.h, Type.GRASS);
-                grass2 = new Rectangle(R.x + R.w * 0.5, R.y, R.w * 0.5, R.h, Type.GRASS);
-                newDiv.push(grass2);
-                newDiv.push.apply(newDiv, grassRandomDivide(grass1, n - 1));
-                break;
-            case 1: // 1:1 dzielimy 2
-                grass1 = new Rectangle(R.x, R.y, R.w * 0.5, R.h, Type.GRASS);
-                grass2 = new Rectangle(R.x + R.w * 0.5, R.y, R.w * 0.5, R.h, Type.GRASS);
-                newDiv.push(grass1);
-                newDiv.push.apply(newDiv, grassRandomDivide(grass2, n - 1));
-                break;
-            case 2: // 3:2
-                grass1 = new Rectangle(R.x, R.y, R.w * 0.6, R.h, Type.GRASS);
-                grass2 = new Rectangle(R.x + R.w * 0.6, R.y, R.w * 0.4, R.h, Type.GRASS);
-                newDiv.push(grass2);
-                newDiv.push.apply(newDiv, grassRandomDivide(grass1, n - 1));
-                break;
-            case 3: // 2:3
-                grass1 = new Rectangle(R.x, R.y, R.w * 0.4, R.h, Type.GRASS);
-                grass2 = new Rectangle(R.x + R.w * 0.4, R.y, R.w * 0.6, R.h, Type.GRASS);
-                newDiv.push(grass1);
-                newDiv.push.apply(newDiv, grassRandomDivide(grass2, n - 1));
-                break;
-            // podzialy horyzontalnie
-            case 4: // 1:1 dzielimy 1
-                grass1 = new Rectangle(R.x, R.y, R.w, R.h * 0.5, Type.GRASS);
-                grass2 = new Rectangle(R.x, R.y + R.h * 0.5, R.w, R.h * 0.5, Type.GRASS);
-                newDiv.push(grass2);
-                newDiv.push.apply(newDiv, grassRandomDivide(grass1, n - 1));
-                break;
-            case 5: // 1:1 dzielimy 2
-                grass1 = new Rectangle(R.x, R.y, R.w, R.h * 0.5, Type.GRASS);
-                grass2 = new Rectangle(R.x, R.y + R.h * 0.5, R.w, R.h * 0.5, Type.GRASS);
-                newDiv.push(grass1);
-                newDiv.push.apply(newDiv, grassRandomDivide(grass2, n - 1));
-                break;
-            case 6: // 3:2
-                grass1 = new Rectangle(R.x, R.y, R.w, R.h * 0.6, Type.GRASS);
-                grass2 = new Rectangle(R.x, R.y + R.h * 0.6, R.w, R.h * 0.4, Type.GRASS);
-                newDiv.push(grass2);
-                newDiv.push.apply(newDiv, grassRandomDivide(grass1, n - 1));
-                break;
-            case 7: // 2:3
-                grass1 = new Rectangle(R.x, R.y, R.w, R.h * 0.4, Type.GRASS);
-                grass2 = new Rectangle(R.x, R.y + R.h * 0.4, R.w, R.h * 0.6, Type.GRASS);
-                newDiv.push(grass1);
-                newDiv.push.apply(newDiv, grassRandomDivide(grass2, n - 1));
-                break;
+        // generuje caly ogrod
+        randomGenerate() {
+            this.grassRandomDivide(new Rectangle(10, 10, canvas.width - 20, canvas.height - 20, Type.GRASS), this.DIVISION_COEFF);
+            this.addPaths();
+            this.addWaterFeature();
         }
 
-        return newDiv;
-    }
+        //=========================================================
+        // reguly gramatyki grafowej
 
-    function addPaths(G) {
-        if (G.length <= 1) {
-            return G;
-        }
+        // podstawowy pseudolosowy podzial trawnika
+        grassRandomDivide(R, n) {
+            if (n == 1) {
+                this.graph.push(R);
+                return;
+            }
 
-        for (let i = 0; i < G.length; i++) {
-            if (G[i].t == Type.GRASS && Math.random() > 0.5) {
-                let OG = G[i]; // oldGrass
-                let newGrass, newPath;
+            let newDiv = [];
+            let grass1, grass2;
 
-                let pathCreated = false;
+            // w podzialach nierownych (2:3 i 3:2) dzielimy dalej 
+            // wieksza czesc; w podzialach rownych losujemy
+            // chcemy dzielic "chude" fragmenty ladnie
 
-                while (!pathCreated) {
-                    let randomChoice = Math.floor(Math.random() * 4);
-                    switch (randomChoice) {
-                        case 0:
-                            if (OG.x > 0) {
-                                newGrass = new Rectangle(OG.x + 10, OG.y, OG.w - 10, OG.h, OG.t);
-                                newPath = new Rectangle(OG.x, OG.y, 10, OG.h, Type.PATH);
-                                pathCreated = true;
-                            }
-                            break;
-                        case 1:
-                            if (OG.y > 0) {
-                                newGrass = new Rectangle(OG.x, OG.y + 10, OG.w, OG.h - 10, OG.t);
-                                newPath = new Rectangle(OG.x, OG.y, OG.w, 10, Type.PATH);
-                                pathCreated = true;
-                            }
-                            break;
-                        case 2:
-                            if (OG.x + OG.w < canvas.width) {
-                                newGrass = new Rectangle(OG.x, OG.y, OG.w - 10, OG.h, OG.t);
-                                newPath = new Rectangle(OG.x + OG.w - 10, OG.y, 10, OG.h, Type.PATH);
-                                pathCreated = true;
-                            }
-                            break;
-                        case 3:
-                            if (OG.y + OG.h < canvas.height) {
-                                newGrass = new Rectangle(OG.x, OG.y, OG.w, OG.h - 10, OG.t);
-                                newPath = new Rectangle(OG.x, OG.y + OG.h - 10, OG.w, 10, Type.PATH);
-                                pathCreated = true;
-                            }
-                            break;
-                    }
+            let slice;
+            if (R.w > R.h * 1.3) {
+                slice = Math.floor(Math.random() * 4);
+            }
+            else if (R.h > R.w * 1.3) {
+                slice = Math.floor(Math.random() * 4) + 4;
+            }
+            else {
+                slice = Math.floor(Math.random() * 8);
+            }
+
+            switch (slice) {
+                // podzialy wertykalnie
+                case 0: // 1:1 dzielimy 1
+                    grass1 = new Rectangle(R.x, R.y, R.w * 0.5, R.h, Type.GRASS);
+                    grass2 = new Rectangle(R.x + R.w * 0.5, R.y, R.w * 0.5, R.h, Type.GRASS);
+                    newDiv.push(grass2);
+                    newDiv.push.apply(newDiv, this.grassRandomDivide(grass1, n - 1));
+                    break;
+                case 1: // 1:1 dzielimy 2
+                    grass1 = new Rectangle(R.x, R.y, R.w * 0.5, R.h, Type.GRASS);
+                    grass2 = new Rectangle(R.x + R.w * 0.5, R.y, R.w * 0.5, R.h, Type.GRASS);
+                    newDiv.push(grass1);
+                    newDiv.push.apply(newDiv, this.grassRandomDivide(grass2, n - 1));
+                    break;
+                case 2: // 3:2
+                    grass1 = new Rectangle(R.x, R.y, R.w * 0.6, R.h, Type.GRASS);
+                    grass2 = new Rectangle(R.x + R.w * 0.6, R.y, R.w * 0.4, R.h, Type.GRASS);
+                    newDiv.push(grass2);
+                    newDiv.push.apply(newDiv, this.grassRandomDivide(grass1, n - 1));
+                    break;
+                case 3: // 2:3
+                    grass1 = new Rectangle(R.x, R.y, R.w * 0.4, R.h, Type.GRASS);
+                    grass2 = new Rectangle(R.x + R.w * 0.4, R.y, R.w * 0.6, R.h, Type.GRASS);
+                    newDiv.push(grass1);
+                    newDiv.push.apply(newDiv, this.grassRandomDivide(grass2, n - 1));
+                    break;
+                // podzialy horyzontalnie
+                case 4: // 1:1 dzielimy 1
+                    grass1 = new Rectangle(R.x, R.y, R.w, R.h * 0.5, Type.GRASS);
+                    grass2 = new Rectangle(R.x, R.y + R.h * 0.5, R.w, R.h * 0.5, Type.GRASS);
+                    newDiv.push(grass2);
+                    newDiv.push.apply(newDiv, this.grassRandomDivide(grass1, n - 1));
+                    break;
+                case 5: // 1:1 dzielimy 2
+                    grass1 = new Rectangle(R.x, R.y, R.w, R.h * 0.5, Type.GRASS);
+                    grass2 = new Rectangle(R.x, R.y + R.h * 0.5, R.w, R.h * 0.5, Type.GRASS);
+                    newDiv.push(grass1);
+                    newDiv.push.apply(newDiv, this.grassRandomDivide(grass2, n - 1));
+                    break;
+                case 6: // 3:2
+                    grass1 = new Rectangle(R.x, R.y, R.w, R.h * 0.6, Type.GRASS);
+                    grass2 = new Rectangle(R.x, R.y + R.h * 0.6, R.w, R.h * 0.4, Type.GRASS);
+                    newDiv.push(grass2);
+                    newDiv.push.apply(newDiv, this.grassRandomDivide(grass1, n - 1));
+                    break;
+                case 7: // 2:3
+                    grass1 = new Rectangle(R.x, R.y, R.w, R.h * 0.4, Type.GRASS);
+                    grass2 = new Rectangle(R.x, R.y + R.h * 0.4, R.w, R.h * 0.6, Type.GRASS);
+                    newDiv.push(grass1);
+                    newDiv.push.apply(newDiv, this.grassRandomDivide(grass2, n - 1));
+                    break;
+            }
+
+            this.graph.push.apply(this.graph, newDiv);
+        }   
+
+        // sciezki naokolo kazdego z wydzielonych fragmentow trawnika
+        addPaths() {
+            this.graph.push.apply(this.graph, [
+                new Rectangle(0, 0, canvas.width, 10, Type.PATH),
+                new Rectangle(0, 0, 10, canvas.height, Type.PATH),
+                new Rectangle(canvas.width - 10, 0, 10, canvas.height, Type.PATH),
+                new Rectangle(0, canvas.height - 10, canvas.width, 10, Type.PATH)
+            ]);
+
+            for (let i = 0; i < this.graph.length; i++) {
+                if (this.graph[i].t == Type.GRASS) {
+                    let OG = this.graph[i]; // oldGrass
+                    let newGrass, newPath1, newPath2, newPath3, newPath4;
+
+                    newGrass = new Rectangle(OG.x + 10, OG.y + 10, OG.w - 20, OG.h - 20, OG.t);
+                    newPath1 = new Rectangle(OG.x, OG.y, 10, OG.h, Type.PATH);
+                    newPath2 = new Rectangle(OG.x, OG.y, OG.w, 10, Type.PATH);
+                    newPath3 = new Rectangle(OG.x + OG.w - 10, OG.y, 10, OG.h, Type.PATH);
+                    newPath4 = new Rectangle(OG.x, OG.y + OG.h - 10, OG.w, 10, Type.PATH);
+                    
+                    this.graph.splice(i, 1, newGrass, newPath1, newPath2, newPath3, newPath4);
+                    i++;
                 }
-                G.splice(i, 1, newGrass, newPath);
-                i++;
             }
         }
 
-        return G;
-    }
+        addWaterFeature() {
+            let biggestGrass = new Rectangle(-1, -1, 0, 0, Type.NULL);
+            for (let i = 1; i < this.graph.length; i++) {
+                if(this.graph[i] instanceof Rectangle &&
+                    this.graph[i].w * this.graph[i].h > biggestGrass.w * biggestGrass.h) {
+                        biggestGrass = this.graph[i]; 
+                }
+            }
 
-    //=========================================================
-    // klasa ogrod
-    class Garden {
-        constructor() {
-            this.grass0 = new Rectangle(0, 0, canvas.width, canvas.height, Type.GRASS);
-            this.graph = []
+            let offsetX = (Math.floor(Math.random() * biggestGrass.w / 15) - (biggestGrass.w / 30)) * 10;
+            let offsetY = (Math.floor(Math.random() * biggestGrass.h / 15) - (biggestGrass.h / 30)) * 10;
+            let middleX = biggestGrass.x + (biggestGrass.w / 2) + offsetX;
+            let middleY = biggestGrass.y + (biggestGrass.h / 2) + offsetY;
+            let offsetR = (Math.floor(Math.random() * 2) - 1) * 10;
+
+            let featureType = Math.floor(Math.random() * 1);
+            switch (featureType) {
+                case 0:
+                    this.graph.push(new Circle(middleX, middleY, 60 + offsetR, Type.WATER));
+                    break;
+                case 1:
+                    
+                    break;
+                case 2:
+                    
+                    break;
+                case 3:
+                    
+                    break;
+            }
         }
 
-        randomGenerate() {
-            this.graph.push.apply(this.graph, grassRandomDivide(this.grass0, 5));
-            this.graph = addPaths(this.graph);
-        }
 
+        //=========================================================
+        // funkcje pomocnicze
+
+        //=========================================================
+        // rysowanie
         draw() {
             for (let i = 0; i < this.graph.length; i++) {
-                if (this.graph[i] instanceof Rectangle) {
+                if (this.graph[i].t == Type.GRASS) {
                     this.graph[i].draw();
                 }
             }
 
             for (let i = 0; i < this.graph.length; i++) {
-                if (this.graph[i] instanceof Circle) {
-                    console.log(this.graph[i]);
+                if (this.graph[i].t == Type.WATER) {
+                    this.graph[i].draw();
+                }
+            }
+
+            for (let i = 0; i < this.graph.length; i++) {
+                if (this.graph[i].t == Type.PATH) {
                     this.graph[i].draw();
                 }
             }
