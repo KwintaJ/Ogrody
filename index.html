@@ -468,6 +468,7 @@
             }
         }
 
+        // dodawanie oczek wodnych: koło, owale, rzeczka albo brak
         addWaterFeature() {
             let biggestGrass = new Rectangle(-1, -1, 0, 0, Type.NULL);
             for (let i = 1; i < this.graph.length; i++) {
@@ -477,25 +478,63 @@
                 }
             }
 
-            let offsetX = (Math.floor(Math.random() * biggestGrass.w / 15) - (biggestGrass.w / 30)) * 10;
-            let offsetY = (Math.floor(Math.random() * biggestGrass.h / 15) - (biggestGrass.h / 30)) * 10;
+            let offsetX = (Math.floor(Math.random() * biggestGrass.w / 20) - (biggestGrass.w / 40)) * 10;
+            let offsetY = (Math.floor(Math.random() * biggestGrass.h / 20) - (biggestGrass.h / 40)) * 10;
             let middleX = biggestGrass.x + (biggestGrass.w / 2) + offsetX;
             let middleY = biggestGrass.y + (biggestGrass.h / 2) + offsetY;
             let offsetR = (Math.floor(Math.random() * 2) - 1) * 10;
+            let nR;
 
-            let featureType = Math.floor(Math.random() * 1);
+            let featureType = Math.floor(Math.random() * 5);
             switch (featureType) {
-                case 0:
-                    this.graph.push(new Circle(middleX, middleY, 60 + offsetR, Type.WATER));
+                case 0: // kolo
+                    this.graph.push(new Circle(middleX, middleY, 70 + offsetR, Type.WATER));
                     break;
-                case 1:
-                    
+                case 1: // owal 1
+                    let nXa = (middleX + 35) - ((middleX + 35) % 10);
+                    let nXb = (middleX - 35) - ((middleX - 35) % 10);
+                    let nY = (middleY) - ((middleY) % 10);
+                    nR = (60 + offsetR) - ((60 + offsetR) % 10);
+                    this.graph.push(new Circle(nXa, nY, nR, Type.WATER));
+                    this.graph.push(new Circle(nXb, nY, nR, Type.WATER));
+                    this.graph.push(new Rectangle(nXb, nY - nR, 70, 2 * nR, Type.WATER));
                     break;
-                case 2:
-                    
+                case 2: // owal 2
+                    let nYa = (middleY + 35) - ((middleY + 35) % 10);
+                    let nYb = (middleY - 35) - ((middleY - 35) % 10);
+                    let nX = (middleX) - ((middleX) % 10);
+                    nR = (60 + offsetR) - ((60 + offsetR) % 10);
+                    this.graph.push(new Circle(nX, nYa, nR, Type.WATER));
+                    this.graph.push(new Circle(nX, nYb, nR, Type.WATER));
+                    this.graph.push(new Rectangle(nX - nR, nYb, 2 * nR, 70, Type.WATER));
                     break;
-                case 3:
-                    
+                case 3: // rzeczka
+                    if (biggestGrass.w >= biggestGrass.h) {
+                        let chunk = (biggestGrass.w / 8) - ((biggestGrass.w / 8) % 10);
+                        let lastChunk = biggestGrass.w - (7 * chunk);
+                        this.graph.push(new Rectangle(biggestGrass.x, middleY + 10, chunk, 20, Type.WATER));
+                        this.graph.push(new Rectangle(biggestGrass.x + chunk, middleY + 20, chunk, 20, Type.WATER));
+                        this.graph.push(new Rectangle(biggestGrass.x + (2 * chunk), middleY + 10, chunk, 20, Type.WATER));
+                        this.graph.push(new Rectangle(biggestGrass.x + (3 * chunk), middleY, chunk, 20, Type.WATER));
+                        this.graph.push(new Rectangle(biggestGrass.x + (4 * chunk), middleY - 10, chunk, 20, Type.WATER));
+                        this.graph.push(new Rectangle(biggestGrass.x + (5 * chunk), middleY - 20, chunk, 20, Type.WATER));
+                        this.graph.push(new Rectangle(biggestGrass.x + (6 * chunk), middleY - 10, chunk, 20, Type.WATER));
+                        this.graph.push(new Rectangle(biggestGrass.x + (7 * chunk), middleY, lastChunk, 20, Type.WATER));
+                    }
+                    else {
+                        let chunk = (biggestGrass.h / 8) - ((biggestGrass.h / 8) % 10);
+                        let lastChunk = biggestGrass.h - (7 * chunk);
+                        this.graph.push(new Rectangle(middleX + 10, biggestGrass.y, 20, chunk, Type.WATER));
+                        this.graph.push(new Rectangle(middleX + 20, biggestGrass.y + chunk, 20, chunk, Type.WATER));
+                        this.graph.push(new Rectangle(middleX + 10, biggestGrass.y + (2 * chunk), 20, chunk, Type.WATER));
+                        this.graph.push(new Rectangle(middleX, biggestGrass.y + (3 * chunk), 20, chunk, Type.WATER));
+                        this.graph.push(new Rectangle(middleX - 10, biggestGrass.y + (4 * chunk), 20, chunk, Type.WATER));
+                        this.graph.push(new Rectangle(middleX - 20, biggestGrass.y + (5 * chunk), 20, chunk, Type.WATER));
+                        this.graph.push(new Rectangle(middleX - 10, biggestGrass.y + (6 * chunk), 20, chunk, Type.WATER));
+                        this.graph.push(new Rectangle(middleX, biggestGrass.y + (7 * chunk), 20, lastChunk, Type.WATER));
+                    }
+                    break;
+                case 4: // nic
                     break;
             }
         }
