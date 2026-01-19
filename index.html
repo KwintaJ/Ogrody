@@ -21,7 +21,7 @@
 
         body {
             margin: 0;
-            height: 100vh;
+            height: 130vh;
             display: flex;
             flex-direction: column;
             justify-content: center;
@@ -106,6 +106,17 @@
             font-size: 0.9rem;
         }
 
+        .custom-slider {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 100%;
+            height: 6px;
+            background: #ddd;
+            outline: none;
+            border-radius: 5px;
+        }
+
+
         footer {
             align-items: center;
             margin-top: 8.5rem;
@@ -121,23 +132,54 @@
 </head>
 <body>
 
-    <h1>Projekt ogrodu</h1>
+    <h1>Projekt</h1>
     <canvas id="canvas" width="500" height="500"></canvas>
 
     <div class="nav">
         <a id="generateButton">Generuj</a>
-        <a href="https://kwintaj.github.io/Ogrody/">Powrót</a>
     </div>
 
     <div class="dimensions">
         <label>
             Szerokość (m):
-            <input type="number" id="widthInput" value="50" min="1">
+            <input type="number" id="widthInput" value="60" min="1">
         </label>
         <label>
             Wysokość (m):
             <input type="number" id="heightInput" value="50" min="1">
         </label>
+    </div>
+    <br>
+
+    <div class="slider-container" style="width: 300px; font-family: sans-serif;">
+        <div style="display: flex; justify-content: space-between; margin-top: 5px; font-size: 0.9em; color: #666;">
+            <span>mało</span>
+            <span>dużo</span>
+        </div>
+
+        <label for="sciezki-slider" style="display: block; margin-top: 20px; margin-bottom: 10px; font-weight: bold;">
+            Ścieżki
+        </label>
+      
+        <input class="custom-slider" type="range" id="sciezki-slider" min="2" max="7" value="4" step="1" style="width: 100%;">        
+
+        <label for="kwiatki-slider" style="display: block; margin-top: 20px; margin-bottom: 10px; font-weight: bold;">
+            Kwiaty
+        </label>
+      
+        <input class="custom-slider" type="range" id="kwiatki-slider" min="0" max="1" value="0.5" dir="rtl" step="0.05" style="width: 100%;">
+
+        <label for="lawki-slider" style="display: block; margin-top: 20px; margin-bottom: 10px; font-weight: bold;">
+            Ławki
+        </label>
+      
+        <input class="custom-slider" type="range" id="lawki-slider" min="0" max="1" value="0.66" dir="rtl" step="0.05" style="width: 100%;">
+
+        <label for="drzewa-slider" style="display: block; margin-top: 20px; margin-bottom: 10px; font-weight: bold;">
+            Drzewa
+        </label>
+      
+        <input class="custom-slider" type="range" id="drzewa-slider" min="0" max="1" value="0.33" dir="rtl" step="0.05" style="width: 100%;">
     </div>
 
     <footer>
@@ -188,6 +230,13 @@
     document.getElementById("widthInput").addEventListener("keypress", resizeCanvas);
     document.getElementById("heightInput").addEventListener("keypress", resizeCanvas);
     resizeCanvas();
+
+    //=========================================================
+    // pobranie wartosci wspolczynnikow
+    const slider1 = document.getElementById("sciezki-slider");
+    const slider2 = document.getElementById("kwiatki-slider");
+    const slider3 = document.getElementById("lawki-slider");
+    const slider4 = document.getElementById("drzewa-slider");
 
     //=========================================================
     // klasy i funkcje rysowania ogrodu
@@ -249,9 +298,7 @@
                 break;
 
             case Type.TREE:
-                ctx.fillStyle = "#2e7d32";
-                ctx.fillRect(x, y, METER, METER);
-                break;
+                return;
 
             case Type.FLOWERS:
                 ctx.fillStyle = "#ffc0cb";
@@ -308,7 +355,7 @@
                     ctx.fillStyle = "#6ec6ff";
                     break;
                 case Type.TREE:
-                    ctx.fillStyle = "#2e7d32";
+                    ctx.fillStyle = "rgba(46, 126, 50, 0.7)";
                     break;
                 case Type.FLOWERS:
                     ctx.fillStyle = "#ffc0cb";
@@ -329,6 +376,13 @@
                 ctx.strokeStyle = "#1b4d1b";
                 ctx.lineWidth = 4;
                 ctx.stroke();
+
+                ctx.beginPath()
+                ctx.fillStyle = "#1b4d1b";
+                ctx.arc(this.x, this.y, 3, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.lineWidth = 1;
             }
 
             for (let px = this.x - this.r; px < this.x + this.r; px += METER) {
@@ -348,7 +402,10 @@
     class Garden {
         constructor() {
             this.graph = [];
-            this.DIVISION_COEFF = 4;
+            this.DIVISION_COEFF = slider1.value;
+            this.FLOWER_COEFF = slider2.value;
+            this.BENCH_COEFF = slider3.value;
+            this.TREE_COEFF = slider4.value;
         }
 
         // generuje caly ogrod
@@ -356,14 +413,17 @@
             this.grassRandomDivide(new Rectangle(10, 10, canvas.width - 20, canvas.height - 20, Type.GRASS), this.DIVISION_COEFF);
             this.addPaths();
             this.addWaterFeature();
+            this.addFlowers(this.FLOWER_COEFF);
+            this.addBenches(this.BENCH_COEFF);
+            this.addTrees(this.TREE_COEFF);
         }
 
         //=========================================================
         // reguly gramatyki grafowej
 
         // podstawowy pseudolosowy podzial trawnika
-        grassRandomDivide(R, n) {
-            if (n == 1) {
+        grassRandomDivide(R, dc) {
+            if (dc == 1) {
                 this.graph.push(R);
                 return;
             }
@@ -374,7 +434,6 @@
             // w podzialach nierownych (2:3 i 3:2) dzielimy dalej 
             // wieksza czesc; w podzialach rownych losujemy
             // chcemy dzielic "chude" fragmenty ladnie
-
             let slice;
             if (R.w > R.h * 1.3) {
                 slice = Math.floor(Math.random() * 4);
@@ -392,50 +451,50 @@
                     grass1 = new Rectangle(R.x, R.y, R.w * 0.5, R.h, Type.GRASS);
                     grass2 = new Rectangle(R.x + R.w * 0.5, R.y, R.w * 0.5, R.h, Type.GRASS);
                     newDiv.push(grass2);
-                    newDiv.push.apply(newDiv, this.grassRandomDivide(grass1, n - 1));
+                    newDiv.push.apply(newDiv, this.grassRandomDivide(grass1, dc - 1));
                     break;
                 case 1: // 1:1 dzielimy 2
                     grass1 = new Rectangle(R.x, R.y, R.w * 0.5, R.h, Type.GRASS);
                     grass2 = new Rectangle(R.x + R.w * 0.5, R.y, R.w * 0.5, R.h, Type.GRASS);
                     newDiv.push(grass1);
-                    newDiv.push.apply(newDiv, this.grassRandomDivide(grass2, n - 1));
+                    newDiv.push.apply(newDiv, this.grassRandomDivide(grass2, dc - 1));
                     break;
                 case 2: // 3:2
                     grass1 = new Rectangle(R.x, R.y, R.w * 0.6, R.h, Type.GRASS);
                     grass2 = new Rectangle(R.x + R.w * 0.6, R.y, R.w * 0.4, R.h, Type.GRASS);
                     newDiv.push(grass2);
-                    newDiv.push.apply(newDiv, this.grassRandomDivide(grass1, n - 1));
+                    newDiv.push.apply(newDiv, this.grassRandomDivide(grass1, dc - 1));
                     break;
                 case 3: // 2:3
                     grass1 = new Rectangle(R.x, R.y, R.w * 0.4, R.h, Type.GRASS);
                     grass2 = new Rectangle(R.x + R.w * 0.4, R.y, R.w * 0.6, R.h, Type.GRASS);
                     newDiv.push(grass1);
-                    newDiv.push.apply(newDiv, this.grassRandomDivide(grass2, n - 1));
+                    newDiv.push.apply(newDiv, this.grassRandomDivide(grass2, dc - 1));
                     break;
                 // podzialy horyzontalnie
                 case 4: // 1:1 dzielimy 1
                     grass1 = new Rectangle(R.x, R.y, R.w, R.h * 0.5, Type.GRASS);
                     grass2 = new Rectangle(R.x, R.y + R.h * 0.5, R.w, R.h * 0.5, Type.GRASS);
                     newDiv.push(grass2);
-                    newDiv.push.apply(newDiv, this.grassRandomDivide(grass1, n - 1));
+                    newDiv.push.apply(newDiv, this.grassRandomDivide(grass1, dc - 1));
                     break;
                 case 5: // 1:1 dzielimy 2
                     grass1 = new Rectangle(R.x, R.y, R.w, R.h * 0.5, Type.GRASS);
                     grass2 = new Rectangle(R.x, R.y + R.h * 0.5, R.w, R.h * 0.5, Type.GRASS);
                     newDiv.push(grass1);
-                    newDiv.push.apply(newDiv, this.grassRandomDivide(grass2, n - 1));
+                    newDiv.push.apply(newDiv, this.grassRandomDivide(grass2, dc - 1));
                     break;
                 case 6: // 3:2
                     grass1 = new Rectangle(R.x, R.y, R.w, R.h * 0.6, Type.GRASS);
                     grass2 = new Rectangle(R.x, R.y + R.h * 0.6, R.w, R.h * 0.4, Type.GRASS);
                     newDiv.push(grass2);
-                    newDiv.push.apply(newDiv, this.grassRandomDivide(grass1, n - 1));
+                    newDiv.push.apply(newDiv, this.grassRandomDivide(grass1, dc - 1));
                     break;
                 case 7: // 2:3
                     grass1 = new Rectangle(R.x, R.y, R.w, R.h * 0.4, Type.GRASS);
                     grass2 = new Rectangle(R.x, R.y + R.h * 0.4, R.w, R.h * 0.6, Type.GRASS);
                     newDiv.push(grass1);
-                    newDiv.push.apply(newDiv, this.grassRandomDivide(grass2, n - 1));
+                    newDiv.push.apply(newDiv, this.grassRandomDivide(grass2, dc - 1));
                     break;
             }
 
@@ -468,11 +527,11 @@
             }
         }
 
-        // dodawanie oczek wodnych: koło, owale, rzeczka albo brak
+        // dodawanie wody: koło, owale, rzeczka albo brak
         addWaterFeature() {
             let biggestGrass = new Rectangle(-1, -1, 0, 0, Type.NULL);
             for (let i = 1; i < this.graph.length; i++) {
-                if(this.graph[i] instanceof Rectangle &&
+                if (this.graph[i] instanceof Rectangle &&
                     this.graph[i].w * this.graph[i].h > biggestGrass.w * biggestGrass.h) {
                         biggestGrass = this.graph[i]; 
                 }
@@ -539,6 +598,95 @@
             }
         }
 
+        // wybieramy losowe sciezki i sadzimy wzdluz nich kwiatki
+        addFlowers(fc) {
+            for (let i = 0; i < this.graph.length; i++) {
+                if (this.graph[i] instanceof Rectangle &&
+                    this.graph[i].t == Type.PATH && 
+                    Math.random() > fc) {
+                        if (this.graph[i].w > this.graph[i].h) {
+                            this.graph.push(new Rectangle(this.graph[i].x, this.graph[i].y - 10, this.graph[i].w, 10, Type.FLOWERS));
+                            this.graph.push(new Rectangle(this.graph[i].x, this.graph[i].y + 10, this.graph[i].w, 10, Type.FLOWERS));
+                        }
+                        else {
+                            this.graph.push(new Rectangle(this.graph[i].x - 10, this.graph[i].y, 10, this.graph[i].h, Type.FLOWERS));
+                            this.graph.push(new Rectangle(this.graph[i].x + 10, this.graph[i].y, 10, this.graph[i].h, Type.FLOWERS));
+                        }
+                }
+            }
+        }
+
+        // przy sciezkach losowo stawiamy lawki
+        // dodatkowo oczko wodne lub rzeczka moga dostac "pomosty"
+        addBenches(bc) {
+            for (let i = 0; i < this.graph.length; i++) {
+                if (this.graph[i] instanceof Rectangle &&
+                    this.graph[i].t == Type.PATH && 
+                    Math.random() > bc) {
+                        let offsetB;
+                        if (this.graph[i].w > this.graph[i].h) {
+                            offsetB = Math.floor(Math.random() * this.graph[i].w);
+                            offsetB = offsetB - (offsetB % 10);
+                            if (Math.random() > 0.5) {
+                                this.graph.push(new Rectangle(this.graph[i].x + offsetB, this.graph[i].y - 10, 30, 10, Type.BENCH));
+                            } else {
+                                this.graph.push(new Rectangle(this.graph[i].x + offsetB, this.graph[i].y + 10, 30, 10, Type.BENCH));
+                            }
+                        }
+                        else {
+                            offsetB = Math.floor(Math.random() * this.graph[i].h);
+                            offsetB = offsetB - (offsetB % 10);
+                            if (Math.random() > 0.5) {
+                                this.graph.push(new Rectangle(this.graph[i].x - 10, this.graph[i].y + offsetB, 10, 30, Type.BENCH));
+                            } else {
+                                this.graph.push(new Rectangle(this.graph[i].x + 10, this.graph[i].y + offsetB, 10, 30, Type.BENCH));
+                            }
+                        }
+                }
+            }
+
+            for (let i = 0; i < this.graph.length; i++) {
+                if (this.graph[i].t == Type.WATER && 
+                    Math.random() > bc) {
+                    if (this.graph[i] instanceof Circle) {
+                        let randomSide = Math.floor(Math.random() * 4);
+                        switch(randomSide) {
+                            case 0:
+                                this.graph.push(new Rectangle(this.graph[i].x - this.graph[i].r, this.graph[i].y, 30, 10, Type.BENCH));
+                                break;
+                            case 1:
+                                this.graph.push(new Rectangle(this.graph[i].x + (this.graph[i].r - 30), this.graph[i].y, 30, 10, Type.BENCH));
+                                break;
+                            case 2:
+                                this.graph.push(new Rectangle(this.graph[i].x, this.graph[i].y - this.graph[i].r, 10, 30, Type.BENCH));
+                                break;
+                            case 3:
+                                this.graph.push(new Rectangle(this.graph[i].x, this.graph[i].y + (this.graph[i].r - 30), 10, 30, Type.BENCH));
+                                break;
+                        }
+                    }
+                    break;
+                }
+            }
+        }
+
+        // sadzenie drzew w losowych miejscach na losowych trawnikach
+        addTrees(tc) {
+            let treeNum = 0;
+            for (let i = 0; i < this.graph.length; i++) {
+                if(treeNum > 10) { treeNum = 0; continue; }
+                if (this.graph[i] instanceof Rectangle &&
+                    this.graph[i].t == Type.GRASS && 
+                    Math.random() > tc) {
+                        let treeX = this.graph[i].x + Math.floor(Math.random() * this.graph[i].w);
+                        let treeY = this.graph[i].y + Math.floor(Math.random() * this.graph[i].h);
+                        let treeR = 65 + Math.floor(Math.random() * 30) - 15;
+                        this.graph.push(new Circle(treeX, treeY, treeR, Type.TREE));
+                        treeNum++;
+                        if(Math.random() > (tc * 0.75)) { i--; }
+                }
+            }
+        }
 
         //=========================================================
         // funkcje pomocnicze
@@ -559,7 +707,25 @@
             }
 
             for (let i = 0; i < this.graph.length; i++) {
+                if (this.graph[i].t == Type.FLOWERS) {
+                    this.graph[i].draw();
+                }
+            }
+
+            for (let i = 0; i < this.graph.length; i++) {
+                if (this.graph[i].t == Type.BENCH) {
+                    this.graph[i].draw();
+                }
+            }
+
+            for (let i = 0; i < this.graph.length; i++) {
                 if (this.graph[i].t == Type.PATH) {
+                    this.graph[i].draw();
+                }
+            }
+
+            for (let i = 0; i < this.graph.length; i++) {
+                if (this.graph[i].t == Type.TREE) {
                     this.graph[i].draw();
                 }
             }
